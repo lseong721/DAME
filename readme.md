@@ -16,3 +16,7 @@ python main.py
 
 ## Results
 See logs by `tensorboard --logdir checkpoints/{log_name}`.
+
+
+## Acknowledgement
+This code is partially based on [ViT-Pytorch](https://github.com/lucidrains/vit-pytorch)
