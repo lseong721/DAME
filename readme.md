@@ -17,7 +17,8 @@ python main.py
 ## Results
 See logs by `tensorboard --logdir checkpoints/{log_name}`.
 
-![title](fig/output_sample.webp){: width="100%" hight="100%"}
+![title](fig/output_sample.webp){: width="100%" height="100%"}
+<img src="fig/output_sample.webp" width="300" height="300">
 
 ## Acknowledgement
 This code is partially based on [ViT-Pytorch](https://github.com/lucidrains/vit-pytorch)
