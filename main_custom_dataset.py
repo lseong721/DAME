@@ -4,17 +4,12 @@ import torch.nn.functional as F
 from datasets import load_dataset
 from torchvision import transforms
 import torch
-from diffusers import UNet2DModel
 from diffusers import DDPMScheduler, DPMSolverMultistepScheduler, DPMSolverSDEScheduler, PNDMScheduler
 from diffusers.optimization import get_cosine_schedule_with_warmup
-from diffusers import DDPMPipeline
 import math
 from PIL import Image
 from accelerate import Accelerator
-from huggingface_hub import HfFolder, Repository, whoami
 from tqdm.auto import tqdm
-from pathlib import Path
-from accelerate import notebook_launcher
 import numpy as np
 import random
 from glob import glob
@@ -44,7 +39,6 @@ def train_loop(model, noise_scheduler, optimizer, train_dataloader, test_dataloa
     global_step = 0
 
     lpips = LearnedPerceptualImagePatchSimilarity(net_type='vgg').to(accelerator.device)
-    # loss_fn_vgg = lpips.LPIPS(net='vgg').to(accelerator.device)
     # ssim = StructuralSimilarityIndexMeasure(data_range=1.0).to(accelerator.device)
     
     # Now you train the model
@@ -95,6 +89,7 @@ def train_loop(model, noise_scheduler, optimizer, train_dataloader, test_dataloa
                 batch_size = clean_images.shape[0]
 
                 noise = torch.randn_like(clean_images)
+
                 noisy_images = torch.randn_like(clean_images)
 
                 masked_patches = model.to_patch(clean_images)
@@ -133,7 +128,7 @@ def train_loop(model, noise_scheduler, optimizer, train_dataloader, test_dataloa
 class TrainingConfig:
     image_size = 128  # the generated image resolution
     train_batch_size = 16
-    eval_batch_size = 16  # how many images to sample during evaluation
+    eval_batch_size = 4  # how many images to sample during evaluation
     num_epochs = 500
     gradient_accumulation_steps = 1
     learning_rate = 1e-4
@@ -173,23 +168,12 @@ if __name__ == '__main__':
 
     os.makedirs(args.model_dir, exist_ok=True)
 
+    ''' Dataset '''
+    data_list = sorted(glob(os.path.join(args.data_dir, '20240228_LHS2/uv_atlas_nmap_old/*.png')))
+    train_size = int(0.8 * len(data_list))
 
-    config.dataset_name = "huggan/smithsonian_butterflies_subset"
-    # dataset = load_dataset(config.dataset_name, split="train[:10%]")
-    train_dataset = load_dataset(config.dataset_name, split="train[:80%]")
-    test_dataset = load_dataset(config.dataset_name, split="train[80%:]")
-
-    preprocess = transforms.Compose([transforms.Resize((config.image_size, config.image_size)),
-                                    transforms.RandomHorizontalFlip(),
-                                    transforms.ToTensor(),
-                                    transforms.Normalize([0.5], [0.5]),])
-
-    def transform(examples):
-        images = [preprocess(image.convert("RGB")) for image in examples["image"]]
-        return {"images": images}
-
-    train_dataset.set_transform(transform)
-    test_dataset.set_transform(transform)
+    train_dataset = CustomImageDataset(data_list[:train_size], image_size=config.image_size, is_train=True)
+    test_dataset = CustomImageDataset(data_list[train_size:], image_size=config.image_size, is_train=False)
 
     noise_scheduler = PNDMScheduler(num_train_timesteps=1000)
 
