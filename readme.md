@@ -17,7 +17,7 @@ python main.py
 ## Results
 See logs by `tensorboard --logdir checkpoints/{log_name}`.
 
-![avatar](fig/output_sample.webp)
+![title](fig/output_sample.webp){: width="100%" hight="100%"}
 
 ## Acknowledgement
 This code is partially based on [ViT-Pytorch](https://github.com/lucidrains/vit-pytorch)
